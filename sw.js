@@ -1,5 +1,5 @@
-const CACHE='dss-v30-layered-r1';
-const ASSETS=['./','./index.html','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
+const CACHE='dss-v40-vector-studio-r1';
+const ASSETS=['./','./index.html','./v3-layered.js','./v4-studio.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
