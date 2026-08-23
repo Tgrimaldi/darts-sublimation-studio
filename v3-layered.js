@@ -1,8 +1,8 @@
 /* DSS compatibility bootstrap.
-   Production chain: v4 Vector Studio -> v4.1 Premium Recipe -> v4.2 Final Flow.
+   Production chain: v4 Vector Studio -> v4.1 Premium Recipe -> v4.3 Final Exact Export.
    Mobile freshness: force service-worker update and reload once when a new controller activates. */
 (() => {
-  const BUILD='4.2.2';
+  const BUILD='4.3.0';
   window.DSS_BUILD=BUILD;
 
   if('serviceWorker' in navigator){
@@ -38,7 +38,7 @@
     console.info('DSS v4 Vector Studio loaded · build '+BUILD);
     load('./v4-premium.js?v=4.1',()=>{
       console.info('DSS v4.1 Premium Recipe loaded · build '+BUILD);
-      load('./v4-final.js?v=4.2',()=>console.info('DSS v4.2 Final Flow loaded · build '+BUILD),'DSS v4.2 Final Flow could not be loaded');
+      load('./v4-final.js?v=4.3',()=>console.info('DSS v4.3 Final Exact Export loaded · build '+BUILD),'DSS v4.3 Final Exact Export could not be loaded');
     },'DSS v4.1 Premium Recipe could not be loaded');
   },'DSS v4 Vector Studio could not be loaded');
 })();
