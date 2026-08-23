@@ -1,0 +1,12 @@
+DSS v2.6 — ICON PATCH
+
+Puja aquests 5 fitxers a l'arrel del repositori GitHub:
+- index.html
+- manifest.webmanifest
+- sw.js
+- icon-1024.png
+- apple-touch-icon.png
+
+Substitueix els 3 fitxers existents quan GitHub ho demani.
+Després espera que GitHub Pages torni a desplegar.
+A l'iPhone: elimina l'accés antic i torna a fer Safari > Compartir > Afegir a la pantalla d'inici.
