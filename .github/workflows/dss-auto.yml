@@ -1,24 +1,23 @@
 name: DSS Auto Quality Gate & Deploy
 
 on:
-  issue_comment:
-    types: [created]
+  issues:
+    types: [opened]
 
 permissions:
   contents: write
   issues: write
 
 concurrency:
-  group: dss-auto-${{ github.event.issue.number }}
+  group: dss-auto-main
   cancel-in-progress: false
 
 jobs:
   apply:
     if: >
       github.event.issue.user.login == github.repository_owner &&
-      github.event.comment.user.login == github.repository_owner &&
-      github.event.comment.body == 'DSS_APPLY' &&
-      startsWith(github.event.issue.title, '[DSS-AUTO]')
+      startsWith(github.event.issue.title, '[DSS-AUTO]') &&
+      contains(github.event.issue.body, 'DSS_AUTO_APPLY_V1')
     runs-on: ubuntu-latest
 
     steps:
@@ -33,54 +32,34 @@ jobs:
           git config user.name "DSS Automation"
           git config user.email "actions@users.noreply.github.com"
 
-      - name: Collect patch parts from issue and comments
+      - name: Reconstruct patch from issue
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           python - <<'PY'
-          import json, os, subprocess, re, base64
-
-          repo = os.environ["GITHUB_REPOSITORY"]
-          issue = os.environ["ISSUE_NUMBER"]
-
-          issue_json = subprocess.check_output(
-              ["gh","api",f"repos/{repo}/issues/{issue}"], text=True
-          )
-          issue_body = json.loads(issue_json).get("body") or ""
-
-          comments_json = subprocess.check_output(
-              ["gh","api",f"repos/{repo}/issues/{issue}/comments","--paginate"], text=True
-          )
-          comments = json.loads(comments_json)
-          bodies = [issue_body] + [(c.get("body") or "") for c in comments]
-
+          import os, re, base64
+          body = os.environ.get('ISSUE_BODY','')
           pattern = re.compile(
               r"DSS_PATCH_PART\s+(\d+)/(\d+)\s*\n([A-Za-z0-9+/=\r\n]+?)\nDSS_END_PART",
               re.M
           )
-
           parts = {}
           total = None
-          for body in bodies:
-              for n, t, data in pattern.findall(body):
-                  n, t = int(n), int(t)
-                  if total is None:
-                      total = t
-                  if total != t:
-                      raise SystemExit("Nombre total de parts inconsistent.")
-                  clean = "".join(data.split())
-                  parts[n] = clean
-
+          for n, t, data in pattern.findall(body):
+              n, t = int(n), int(t)
+              if total is None:
+                  total = t
+              if total != t:
+                  raise SystemExit('Nombre total de parts inconsistent.')
+              parts[n] = ''.join(data.split())
           if not total:
-              raise SystemExit("No s'ha trobat cap DSS_PATCH_PART.")
-          missing = [i for i in range(1, total+1) if i not in parts]
+              raise SystemExit('No s\'ha trobat cap DSS_PATCH_PART.')
+          missing = [i for i in range(1,total+1) if i not in parts]
           if missing:
-              raise SystemExit(f"Falten parts del patch: {missing}")
-
-          raw = b"".join(base64.b64decode(parts[i]) for i in range(1,total+1))
-          open("/tmp/dss.patch","wb").write(raw)
-          print(f"Patch reconstruït: {len(raw)} bytes en {total} part(s).")
+              raise SystemExit(f'Falten parts del patch: {missing}')
+          raw = b''.join(base64.b64decode(parts[i]) for i in range(1,total+1))
+          open('/tmp/dss.patch','wb').write(raw)
+          print(f'Patch reconstruït: {len(raw)} bytes en {total} part(s).')
           PY
 
       - name: Validate patch
@@ -99,7 +78,6 @@ jobs:
       - name: Quality Gate
         run: |
           set -e
-
           test -f index.html
           test -f manifest.webmanifest
           test -f sw.js
@@ -108,7 +86,6 @@ jobs:
 
           node <<'NODE'
           const fs = require('fs');
-
           const html = fs.readFileSync('index.html','utf8');
           if (!/<!doctype html>/i.test(html)) throw new Error('Falta <!doctype html>');
           if (!html.includes('DSS_PACKAGE v2.6')) throw new Error('Falta contracte DSS_PACKAGE v2.6');
@@ -117,13 +94,11 @@ jobs:
           const sw = fs.readFileSync('sw.js','utf8');
           const m = sw.match(/const ASSETS=\[(.*?)\]/s);
           if (!m) throw new Error('No es pot llegir ASSETS del service worker');
-
           const assets = [...m[1].matchAll(/['"]([^'"]+)['"]/g)].map(x => x[1]);
           const missing = assets
             .filter(p => p.startsWith('./') && p !== './')
             .map(p => p.replace(/^\.\//,''))
             .filter(p => !fs.existsSync(p));
-
           if (missing.length) throw new Error('Assets inexistents: ' + missing.join(', '));
 
           console.log('HTML OK');
