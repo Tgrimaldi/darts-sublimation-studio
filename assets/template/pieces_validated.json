@@ -1,0 +1,89 @@
+{
+  "canvas": [
+    17812,
+    9809
+  ],
+  "source": "render del PSD K-VSE original",
+  "pieces": [
+    {
+      "id": 1,
+      "role": "SUPERIOR / AUXILIAR 1",
+      "file": "P01.png",
+      "x": 6709,
+      "y": 0,
+      "w": 5462,
+      "h": 1435,
+      "area_preview": 59600
+    },
+    {
+      "id": 2,
+      "role": "SUPERIOR / AUXILIAR 2",
+      "file": "P02.png",
+      "x": 356,
+      "y": 10,
+      "w": 5452,
+      "h": 1425,
+      "area_preview": 59597
+    },
+    {
+      "id": 3,
+      "role": "FRONTAL",
+      "file": "P03.png",
+      "x": 0,
+      "y": 1524,
+      "w": 6165,
+      "h": 8285,
+      "area_preview": 461933
+    },
+    {
+      "id": 4,
+      "role": "ESQUENA",
+      "file": "P04.png",
+      "x": 6363,
+      "y": 1534,
+      "w": 6155,
+      "h": 8275,
+      "area_preview": 480693
+    },
+    {
+      "id": 5,
+      "role": "COLL / AUXILIAR 1",
+      "file": "P05.png",
+      "x": 12518,
+      "y": 1910,
+      "w": 5284,
+      "h": 792,
+      "area_preview": 35257
+    },
+    {
+      "id": 6,
+      "role": "COLL / AUXILIAR 2",
+      "file": "P06.png",
+      "x": 12518,
+      "y": 2880,
+      "w": 5294,
+      "h": 782,
+      "area_preview": 35309
+    },
+    {
+      "id": 7,
+      "role": "MÀNIGA 1",
+      "file": "P07.png",
+      "x": 12765,
+      "y": 4177,
+      "w": 5027,
+      "h": 2623,
+      "area_preview": 101504
+    },
+    {
+      "id": 8,
+      "role": "MÀNIGA 2",
+      "file": "P08.png",
+      "x": 12765,
+      "y": 7176,
+      "w": 5027,
+      "h": 2633,
+      "area_preview": 101849
+    }
+  ]
+}
