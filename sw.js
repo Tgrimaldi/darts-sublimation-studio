@@ -1,5 +1,5 @@
-const CACHE='dss-v43-final-r1';
-const CORE=['./','./index.html','./v3-layered.js','./v4-studio.js','./v4-premium.js','./v4-final.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
+const CACHE='dss-v44-heritage-r1';
+const CORE=['./','./index.html','./v3-layered.js','./v4-studio.js','./v4-premium.js','./v4-heritage.js','./v4-final.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
@@ -50,8 +50,6 @@ self.addEventListener('fetch',event=>{
       const fresh=await fetch(request,{cache:'no-store'});
       if(fresh && fresh.ok) cache.put(request,fresh.clone());
       return fresh;
-    }catch(e){
-      return Response.error();
-    }
+    }catch(e){return Response.error()}
   })());
 });
