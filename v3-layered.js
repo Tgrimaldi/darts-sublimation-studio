@@ -1,12 +1,44 @@
 /* DSS compatibility bootstrap.
-   Production chain: v4 Vector Studio -> v4.1 Premium Recipe -> v4.2 Final Flow. */
+   Production chain: v4 Vector Studio -> v4.1 Premium Recipe -> v4.2 Final Flow.
+   Mobile freshness: force service-worker update and reload once when a new controller activates. */
 (() => {
-  const load=(src,ok,err)=>{const s=document.createElement('script');s.src=src;s.defer=true;s.onload=ok;s.onerror=()=>console.error(err);document.body.appendChild(s)};
+  const BUILD='4.2.2';
+  window.DSS_BUILD=BUILD;
+
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',async()=>{
+      try{
+        const reg=await navigator.serviceWorker.register('./sw.js?v='+BUILD,{updateViaCache:'none'});
+        await reg.update();
+        let reloading=false;
+        navigator.serviceWorker.addEventListener('controllerchange',()=>{
+          if(reloading)return;
+          reloading=true;
+          const key='dss-controller-'+BUILD;
+          if(sessionStorage.getItem(key)!=='1'){
+            sessionStorage.setItem(key,'1');
+            location.reload();
+          }
+        });
+      }catch(e){console.warn('DSS SW update check failed',e)}
+    });
+  }
+
+  const load=(src,ok,err)=>{
+    const s=document.createElement('script');
+    const sep=src.includes('?')?'&':'?';
+    s.src=src+sep+'build='+encodeURIComponent(BUILD);
+    s.defer=true;
+    s.onload=ok;
+    s.onerror=()=>console.error(err);
+    document.body.appendChild(s);
+  };
+
   load('./v4-studio.js?v=4.0',()=>{
-    console.info('DSS v4 Vector Studio loaded');
+    console.info('DSS v4 Vector Studio loaded · build '+BUILD);
     load('./v4-premium.js?v=4.1',()=>{
-      console.info('DSS v4.1 Premium Recipe loaded');
-      load('./v4-final.js?v=4.2',()=>console.info('DSS v4.2 Final Flow loaded'),'DSS v4.2 Final Flow could not be loaded');
+      console.info('DSS v4.1 Premium Recipe loaded · build '+BUILD);
+      load('./v4-final.js?v=4.2',()=>console.info('DSS v4.2 Final Flow loaded · build '+BUILD),'DSS v4.2 Final Flow could not be loaded');
     },'DSS v4.1 Premium Recipe could not be loaded');
   },'DSS v4 Vector Studio could not be loaded');
 })();
