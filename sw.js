@@ -1,4 +1,4 @@
-const CACHE='dss-v42-final-r2';
+const CACHE='dss-v43-final-r1';
 const CORE=['./','./index.html','./v3-layered.js','./v4-studio.js','./v4-premium.js','./v4-final.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
 
 self.addEventListener('install',event=>{
@@ -47,7 +47,7 @@ self.addEventListener('fetch',event=>{
     const cached=await cache.match(request);
     if(cached) return cached;
     try{
-      const fresh=await fetch(request);
+      const fresh=await fetch(request,{cache:'no-store'});
       if(fresh && fresh.ok) cache.put(request,fresh.clone());
       return fresh;
     }catch(e){
