@@ -1,0 +1,166 @@
+name: DSS Auto Quality Gate & Deploy
+
+on:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: dss-auto-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    if: >
+      github.event.issue.user.login == github.repository_owner &&
+      github.event.comment.user.login == github.repository_owner &&
+      github.event.comment.body == 'DSS_APPLY' &&
+      startsWith(github.event.issue.title, '[DSS-AUTO]')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Prepare git identity
+        run: |
+          git config user.name "DSS Automation"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Collect patch parts from issue and comments
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          python - <<'PY'
+          import json, os, subprocess, re, base64
+
+          repo = os.environ["GITHUB_REPOSITORY"]
+          issue = os.environ["ISSUE_NUMBER"]
+
+          issue_json = subprocess.check_output(
+              ["gh","api",f"repos/{repo}/issues/{issue}"], text=True
+          )
+          issue_body = json.loads(issue_json).get("body") or ""
+
+          comments_json = subprocess.check_output(
+              ["gh","api",f"repos/{repo}/issues/{issue}/comments","--paginate"], text=True
+          )
+          comments = json.loads(comments_json)
+          bodies = [issue_body] + [(c.get("body") or "") for c in comments]
+
+          pattern = re.compile(
+              r"DSS_PATCH_PART\s+(\d+)/(\d+)\s*\n([A-Za-z0-9+/=\r\n]+?)\nDSS_END_PART",
+              re.M
+          )
+
+          parts = {}
+          total = None
+          for body in bodies:
+              for n, t, data in pattern.findall(body):
+                  n, t = int(n), int(t)
+                  if total is None:
+                      total = t
+                  if total != t:
+                      raise SystemExit("Nombre total de parts inconsistent.")
+                  clean = "".join(data.split())
+                  parts[n] = clean
+
+          if not total:
+              raise SystemExit("No s'ha trobat cap DSS_PATCH_PART.")
+          missing = [i for i in range(1, total+1) if i not in parts]
+          if missing:
+              raise SystemExit(f"Falten parts del patch: {missing}")
+
+          raw = b"".join(base64.b64decode(parts[i]) for i in range(1,total+1))
+          open("/tmp/dss.patch","wb").write(raw)
+          print(f"Patch reconstruït: {len(raw)} bytes en {total} part(s).")
+          PY
+
+      - name: Validate patch
+        run: git apply --check /tmp/dss.patch
+
+      - name: Create rollback tag
+        run: |
+          TAG="backup-$(date -u +%Y%m%d-%H%M%S)"
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "BACKUP_TAG=$TAG" >> "$GITHUB_ENV"
+
+      - name: Apply patch
+        run: git apply /tmp/dss.patch
+
+      - name: Quality Gate
+        run: |
+          set -e
+
+          test -f index.html
+          test -f manifest.webmanifest
+          test -f sw.js
+
+          node -e "JSON.parse(require('fs').readFileSync('manifest.webmanifest','utf8')); console.log('manifest OK')"
+
+          node <<'NODE'
+          const fs = require('fs');
+
+          const html = fs.readFileSync('index.html','utf8');
+          if (!/<!doctype html>/i.test(html)) throw new Error('Falta <!doctype html>');
+          if (!html.includes('DSS_PACKAGE v2.6')) throw new Error('Falta contracte DSS_PACKAGE v2.6');
+          if (!html.includes('Darts Sublimation Studio')) throw new Error('No sembla el DSS');
+
+          const sw = fs.readFileSync('sw.js','utf8');
+          const m = sw.match(/const ASSETS=\[(.*?)\]/s);
+          if (!m) throw new Error('No es pot llegir ASSETS del service worker');
+
+          const assets = [...m[1].matchAll(/['"]([^'"]+)['"]/g)].map(x => x[1]);
+          const missing = assets
+            .filter(p => p.startsWith('./') && p !== './')
+            .map(p => p.replace(/^\.\//,''))
+            .filter(p => !fs.existsSync(p));
+
+          if (missing.length) throw new Error('Assets inexistents: ' + missing.join(', '));
+
+          console.log('HTML OK');
+          console.log('DSS_PACKAGE OK');
+          console.log('Service worker assets OK');
+          NODE
+
+          git diff --check
+
+      - name: Commit and deploy to main
+        env:
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+        run: |
+          if git diff --quiet; then
+            echo "No hi ha canvis per publicar."
+            exit 0
+          fi
+          MSG="${ISSUE_TITLE#\[DSS-AUTO\] }"
+          git add -A
+          git commit -m "${MSG:-DSS automated update}"
+          git push origin main
+          echo "DEPLOY_SHA=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+
+      - name: Report success
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          SHA="${DEPLOY_SHA:-$(git rev-parse HEAD)}"
+          gh issue comment "$ISSUE_NUMBER" --body "✅ Quality Gate superat. Publicat automàticament a **main**. Commit: \`$SHA\`. Backup: \`$BACKUP_TAG\`."
+          gh issue close "$ISSUE_NUMBER"
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment "$ISSUE_NUMBER" --body "❌ **NO s'ha publicat res.** El Quality Gate o l'aplicació del patch ha fallat. Revisa el run d'Actions."
