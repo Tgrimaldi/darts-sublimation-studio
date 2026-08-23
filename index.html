@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="1024x1024" href="./icon-1024.png">
 
-<title>Darts Sublimation Studio v2.7</title>
+<title>Darts Sublimation Studio v3.0</title>
 <style>
 :root{--bg:#070b10;--panel:#111821;--line:#293442;--text:#f4f6f8;--muted:#9fb0c3;--gold:#e3b33f;--ok:#83dfa5;--warn:#efc96e;--bad:#ef9a9a}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
@@ -34,7 +34,7 @@ textarea{min-height:115px;resize:vertical}.checks{display:grid;grid-template-col
 </style>
 </head>
 <body><div class="app">
-<div class="top"><div class="brand"><b>🎯 Darts Sublimation Studio</b><small>v2.7 · MOBILE · CHATGPT DIRECT</small></div><span class="pill">MASTER 17.812 × 9.809</span></div>
+<div class="top"><div class="brand"><b>🎯 Darts Sublimation Studio</b><small>v3.0 · LAYERED · MOBILE</small></div><span class="pill">MASTER 17.812 × 9.809</span></div>
 <div class="steps">
  <div class="step active" data-step="1"><strong>1</strong>Defineix</div>
  <div class="step" data-step="2"><strong>2</strong>ChatGPT</div>
@@ -276,4 +276,5 @@ $("exportPreview").onclick=()=>{const s=finalSvg(),blob=new Blob([s],{type:"imag
 if("serviceWorker"in navigator&&location.protocol.startsWith("http"))navigator.serviceWorker.register("./sw.js").catch(()=>{});
 setStep(1);
 </script>
+<script src="./v3-layered.js"></script>
 </body></html>

@@ -1,4 +1,4 @@
-const CACHE='dss-v27-chat-direct-r2';
+const CACHE='dss-v30-layered-r1';
 const ASSETS=['./','./index.html','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
 
 self.addEventListener('install',event=>{
