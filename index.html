@@ -11,7 +11,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="1024x1024" href="./icon-1024.png">
 
-<title>Darts Sublimation Studio v2.6</title>
+<title>Darts Sublimation Studio v2.7</title>
 <style>
 :root{--bg:#070b10;--panel:#111821;--line:#293442;--text:#f4f6f8;--muted:#9fb0c3;--gold:#e3b33f;--ok:#83dfa5;--warn:#efc96e;--bad:#ef9a9a}
 *{box-sizing:border-box}html,body{margin:0;min-height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
@@ -34,7 +34,7 @@ textarea{min-height:115px;resize:vertical}.checks{display:grid;grid-template-col
 </style>
 </head>
 <body><div class="app">
-<div class="top"><div class="brand"><b>🎯 Darts Sublimation Studio</b><small>v2.6 · MOBILE · ONE FILE</small></div><span class="pill">MASTER 17.812 × 9.809</span></div>
+<div class="top"><div class="brand"><b>🎯 Darts Sublimation Studio</b><small>v2.7 · MOBILE · CHATGPT DIRECT</small></div><span class="pill">MASTER 17.812 × 9.809</span></div>
 <div class="steps">
  <div class="step active" data-step="1"><strong>1</strong>Defineix</div>
  <div class="step" data-step="2"><strong>2</strong>ChatGPT</div>
@@ -77,8 +77,9 @@ textarea{min-height:115px;resize:vertical}.checks{display:grid;grid-template-col
 <section id="s2" class="screen">
  <div class="card">
   <h2>Envia el briefing a ChatGPT</h2>
-  <p class="status">El botó genera un <b>PROMPT DE PRODUCCIÓ</b> amb la geometria exacta de les 8 peces. ChatGPT t'ha de retornar <b>un únic fitxer SVG DSS_PACKAGE</b>. No una làmina, no un mockup i no un collage.</p>
-  <button id="copyPrompt" class="btn gold wide">Copiar prompt per ChatGPT</button>
+  <p class="status">El botó daurat <b>copia el PROMPT DE PRODUCCIÓ i obre directament aquest xat de DSS</b>. Quan s'obri ChatGPT, només has d'enganxar el prompt i enviar-lo. ChatGPT t'ha de retornar <b>un únic fitxer SVG DSS_PACKAGE</b>. No una làmina, no un mockup i no un collage.</p>
+  <button id="copyOpenChat" class="btn gold wide">Copiar prompt + obrir aquest xat</button>
+  <button id="copyPrompt" class="btn wide">Només copiar prompt</button>
   <button id="downloadPrompt" class="btn wide">Descarregar PROMPT.txt</button>
  </div>
  <div class="card"><h2>Què has de rebre de ChatGPT?</h2>
@@ -179,7 +180,47 @@ CRITERIS ARTÍSTICS
 LLIURAMENT
 Crea físicament el fitxer .svg perquè el pugui descarregar i carregar directament a Artwork del Darts Sublimation Studio.`;
 }
-$("copyPrompt").onclick=()=>navigator.clipboard.writeText(promptText()).then(()=>alert("Prompt copiat."));
+const DSS_CHAT_URL="https://chatgpt.com/c/6a8708d0-d884-83eb-bb64-2e483361e0b1";
+
+async function copyPromptText(){
+  const text=promptText();
+  if(navigator.clipboard && window.isSecureContext){
+    await navigator.clipboard.writeText(text);
+    return true;
+  }
+  const ta=document.createElement("textarea");
+  ta.value=text;
+  ta.setAttribute("readonly","");
+  ta.style.position="fixed";
+  ta.style.left="-9999px";
+  document.body.appendChild(ta);
+  ta.select();
+  const ok=document.execCommand("copy");
+  ta.remove();
+  if(!ok) throw new Error("clipboard");
+  return true;
+}
+
+$("copyPrompt").onclick=async()=>{
+  try{
+    await copyPromptText();
+    alert("Prompt copiat.");
+  }catch(e){
+    alert("No s'ha pogut copiar automàticament.");
+  }
+};
+
+$("copyOpenChat").onclick=async()=>{
+  const btn=$("copyOpenChat");
+  try{
+    await copyPromptText();
+    btn.textContent="✓ Copiat · obrint ChatGPT…";
+    setTimeout(()=>{ window.location.href=DSS_CHAT_URL; },250);
+  }catch(e){
+    alert("No s'ha pogut copiar el prompt. Prem «Només copiar prompt» i després obre ChatGPT.");
+  }
+};
+
 function dlText(text,name,type="text/plain"){const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
 $("downloadPrompt").onclick=()=>dlText(promptText(),"DSS_PROMPT_MASTER.txt");
 $("artFile").onchange=e=>{const f=e.target.files[0];if(!f)return;packageValid=false;packageIssues=[];packageText="";rasterData="";rasterW=rasterH=0;
