@@ -1,9 +1,9 @@
-const CACHE='dss-v42-final-r1';
-const ASSETS=['./','./index.html','./v3-layered.js','./v4-studio.js','./v4-premium.js','./v4-final.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
+const CACHE='dss-v42-final-r2';
+const CORE=['./','./index.html','./v3-layered.js','./v4-studio.js','./v4-premium.js','./v4-final.js','./icon-1024.png','./apple-touch-icon.png','./manifest.webmanifest','./assets/logos/DART_ZONE.png','./assets/logos/K_VSE.png','./assets/template/QA_CONTORNS_SOBRE_PSD.jpg'];
 
 self.addEventListener('install',event=>{
   self.skipWaiting();
-  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)));
+  event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(CORE)));
 });
 
 self.addEventListener('activate',event=>{
@@ -14,20 +14,44 @@ self.addEventListener('activate',event=>{
   })());
 });
 
+async function networkFirst(request,fallback){
+  const cache=await caches.open(CACHE);
+  try{
+    const fresh=await fetch(request,{cache:'no-store'});
+    if(fresh && fresh.ok) cache.put(request,fresh.clone());
+    return fresh;
+  }catch(e){
+    return (await cache.match(request)) || (fallback ? await cache.match(fallback) : undefined) || Response.error();
+  }
+}
+
 self.addEventListener('fetch',event=>{
   const request=event.request;
+  if(request.method!=='GET') return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin) return;
+
   if(request.mode==='navigate'){
-    event.respondWith((async()=>{
-      try{
-        const fresh=await fetch(request,{cache:'no-store'});
-        const cache=await caches.open(CACHE);
-        cache.put('./index.html',fresh.clone());
-        return fresh;
-      }catch(e){
-        return (await caches.match('./index.html')) || (await caches.match('./'));
-      }
-    })());
+    event.respondWith(networkFirst(request,'./index.html'));
     return;
   }
-  event.respondWith(caches.match(request).then(cached=>cached||fetch(request)));
+
+  const isDynamic=/\.(?:js|css|html|webmanifest)$/i.test(url.pathname) || url.pathname.endsWith('/sw.js');
+  if(isDynamic){
+    event.respondWith(networkFirst(request));
+    return;
+  }
+
+  event.respondWith((async()=>{
+    const cache=await caches.open(CACHE);
+    const cached=await cache.match(request);
+    if(cached) return cached;
+    try{
+      const fresh=await fetch(request);
+      if(fresh && fresh.ok) cache.put(request,fresh.clone());
+      return fresh;
+    }catch(e){
+      return Response.error();
+    }
+  })());
 });
